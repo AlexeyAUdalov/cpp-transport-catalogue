@@ -40,7 +40,7 @@ namespace transport_catalogue {
 
 		Bus_Information GetBusInformation(const Bus* bus_iterator) const;
 
-		const std::set<std::string_view> GetBussesForStop(std::string_view stop_name) const;
+		const std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
 
 	private:
 		std::deque<Stop> stops_;

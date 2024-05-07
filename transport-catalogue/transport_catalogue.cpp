@@ -73,7 +73,7 @@ namespace transport_catalogue {
 				 bus_route_length };
 	}
 
-	const std::set<std::string_view> TransportCatalogue::GetBussesForStop(std::string_view stop_name) const {
+	const std::set<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view stop_name) const {
 		if (buses_for_stopname_.find(stop_name) != buses_for_stopname_.end()) {
 			return buses_for_stopname_.at(stop_name);
 		}

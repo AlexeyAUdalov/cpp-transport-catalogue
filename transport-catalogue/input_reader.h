@@ -8,13 +8,9 @@
 namespace input_reader {
     struct CommandDescription {
         // Определяет, задана ли команда (поле command непустое)
-        explicit operator bool() const {
-            return !command.empty();
-        }
+        explicit operator bool() const;
 
-        bool operator!() const {
-            return !operator bool();
-        }
+        bool operator!() const;
 
         std::string command;      // Название команды
         std::string id;           // id маршрута или остановки

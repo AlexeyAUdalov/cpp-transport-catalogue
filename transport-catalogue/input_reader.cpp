@@ -99,6 +99,14 @@ namespace input_reader {
         }
     }
 
+    CommandDescription::operator bool() const {
+        return !command.empty();
+    }
+
+    bool CommandDescription::operator!() const {
+        return !operator bool();
+    }
+
     void InputReader::ParseLine(std::string_view line) {
         auto command_description = detail::ParseCommandDescription(line);
         if (command_description) {
