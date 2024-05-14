@@ -1,6 +1,12 @@
 #include "transport_catalogue.h"
 
+#include <stdexcept>
+
 namespace transport_catalogue {
+	size_t PairStopsHasher::operator()(const std::pair<const Stop*, const Stop*> stops) const {
+		return hasher_(stops.first) + 53 * hasher_(stops.second);
+	}
+
 	void TransportCatalogue::AddStop(std::string stop_name, geo::Coordinates stop_coordinates) {
 		Stop temp_stop_object = { std::move(stop_name), std::move(stop_coordinates) };
 		Stop const& stop = stops_.emplace_back(std::move(temp_stop_object));
@@ -49,28 +55,46 @@ namespace transport_catalogue {
 
 	Bus_Information TransportCatalogue::GetBusInformation(const Bus* bus_iterator) const {
 		std::unordered_set<std::string_view> unique_bus_stops;
-		double bus_route_length = 0;
-		geo::Coordinates from_coordinates{};
-		geo::Coordinates to_coordinates{};
+		int bus_route_length = 0;
+		double geografical_bus_route_length = 0;
+		const Stop* from_stop = bus_iterator->bus_stops[0];
 		bool the_fist_stop = true;
 
 		for (auto const& bus_stop : bus_iterator->bus_stops) {
 			unique_bus_stops.insert(bus_stop->stop_name);
 			if (the_fist_stop) {
-				from_coordinates = bus_stop->stop_coordinates;
 				the_fist_stop = false;
 			}
 			else {
-				to_coordinates = bus_stop->stop_coordinates;
-				bus_route_length += geo::ComputeDistance(from_coordinates, to_coordinates);
-				from_coordinates = to_coordinates;
+				std::pair<const Stop*, const Stop*> stops = std::make_pair(from_stop, bus_stop);
+				auto stops_iterator = distances_betwin_stops_.find(stops);
+				if (stops_iterator != distances_betwin_stops_.end()) {
+					auto &[key, distances_betwin_stops] = *stops_iterator;					
+					bus_route_length += distances_betwin_stops;
+				}
+				else {
+					if (from_stop != bus_stop) {
+						std::pair<const Stop*, const Stop*> inverse_stops = std::make_pair(bus_stop, from_stop);
+						auto inverse_stops_iterator = distances_betwin_stops_.find(inverse_stops);
+						if (inverse_stops_iterator != distances_betwin_stops_.end()) {
+							auto &[key, distances_betwin_stops] = *inverse_stops_iterator;
+							bus_route_length += distances_betwin_stops;
+						}
+						else {
+							throw std::invalid_argument(std::string{ "Real distance betwin stops were not found" });
+						}
+					}
+				}				
+				geografical_bus_route_length += geo::ComputeDistance(from_stop->stop_coordinates, bus_stop->stop_coordinates);
+				from_stop = bus_stop;
 			}
 		}
 
 		return { bus_iterator->bus_name,
 				 static_cast<int>(bus_iterator->bus_stops.size()),
 				 static_cast<int>(unique_bus_stops.size()),
-				 bus_route_length };
+				 bus_route_length,
+		         geografical_bus_route_length };
 	}
 
 	const std::set<std::string_view> TransportCatalogue::GetBusesForStop(std::string_view stop_name) const {
@@ -79,6 +103,18 @@ namespace transport_catalogue {
 		}
 		else {
 			return {};
+		}
+	}
+
+	void TransportCatalogue::AddDistancesBetwinStops
+	(std::map<std::string, std::set<std::pair<int, std::string_view>>>& distances_container) {
+		for (const auto& [stop, distances_and_stops] : distances_container) {
+			const Stop* stop_1 = FindStop(stop);
+			for (const auto& distance_and_stop : distances_and_stops) {
+				int real_distance = distance_and_stop.first;
+				const Stop* stop_2 = FindStop(distance_and_stop.second);				
+				distances_betwin_stops_[{stop_1, stop_2}] = real_distance;
+			}
 		}
 	}
 }

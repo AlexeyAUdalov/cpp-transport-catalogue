@@ -70,8 +70,12 @@ namespace stat_reader {
                     << bus_information.bus_name << std::string{ ": " }
                     << bus_information.stops_on_bus_route << std::string{ " stops on route, " }
                     << bus_information.unique_bus_stops << std::string{ " unique stops, " }
-                    << std::setprecision(6) << bus_information.bus_route_length
-                    << std::string{ " route length" } << std::endl;
+                    << bus_information.bus_route_length                    
+                    << std::string{ " route length, " }
+                    << std::setprecision(6)
+                    << static_cast<double>(bus_information.bus_route_length) /
+                                           bus_information.geografical_bus_route_length
+                    << std::string{ " curvature" } << std::endl;
             }
             else {
                 output << command.command << std::string{ " " }

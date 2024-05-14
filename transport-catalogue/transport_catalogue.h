@@ -1,7 +1,7 @@
 #pragma once
 #include <deque>
+#include <map>
 #include <set>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -25,7 +25,15 @@ namespace transport_catalogue {
 		std::string bus_name;
 		int stops_on_bus_route;
 		int unique_bus_stops;
-		double bus_route_length;
+		int bus_route_length;
+		double geografical_bus_route_length;
+	};
+
+	struct PairStopsHasher {
+	public:
+		size_t operator()(const std::pair<const Stop*, const Stop*> stops) const;
+	private:
+		std::hash<const void*> hasher_;
 	};
 
 	class TransportCatalogue {
@@ -42,11 +50,15 @@ namespace transport_catalogue {
 
 		const std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
 
+		void AddDistancesBetwinStops
+		(std::map<std::string, std::set<std::pair<int, std::string_view>>>& distances_container);
+
 	private:
 		std::deque<Stop> stops_;
 		std::unordered_map<std::string_view, const Stop*> stopname_to_stop_;
 		std::deque<Bus> buses_;
 		std::unordered_map<std::string_view, const Bus*> busname_to_bus_;
 		std::unordered_map<std::string_view, std::set<std::string_view>> buses_for_stopname_;
+		std::unordered_map<std::pair<const Stop*, const Stop*>, int, PairStopsHasher> distances_betwin_stops_;
 	};
 }

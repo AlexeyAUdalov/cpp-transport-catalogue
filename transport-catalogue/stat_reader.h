@@ -7,13 +7,13 @@
 
 namespace stat_reader {
     struct CommandId {
-        // Определяет, задана ли команда (поле command непустое)
+        // РћРїСЂРµРґРµР»СЏРµС‚, Р·Р°РґР°РЅР° Р»Рё РєРѕРјР°РЅРґР° (РїРѕР»Рµ command РЅРµРїСѓСЃС‚РѕРµ)
         explicit operator bool() const;
 
         bool operator!() const;
 
-        std::string_view command;      // Название команды
-        std::string_view id;           // id маршрута или остановки    
+        std::string_view command;      // РќР°Р·РІР°РЅРёРµ РєРѕРјР°РЅРґС‹
+        std::string_view id;           // id РјР°СЂС€СЂСѓС‚Р° РёР»Рё РѕСЃС‚Р°РЅРѕРІРєРё    
     };
 
     void ParseAndPrintStat(const transport_catalogue::TransportCatalogue& tansport_catalogue, 
