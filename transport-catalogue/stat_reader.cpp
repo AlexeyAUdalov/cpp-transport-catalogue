@@ -1,12 +1,11 @@
 #include "stat_reader.h"
 
-#include <array>
 #include <iomanip>
 #include <iostream>
 
 namespace stat_reader {
     namespace detail {
-        CommandId GetCommandAndId(const std::array<std::string, 2>& commands, std::string_view request) {
+        CommandId GetCommandAndId(std::string_view request) {
             std::string_view command;
             std::string_view id;
 
@@ -27,22 +26,21 @@ namespace stat_reader {
                 id = std::string_view(request.substr(not_space, last_pos - space_pos));
             }
 
-            for (const auto& command_from_commands : commands) {
-                if (command_from_commands == command && id != std::string_view{}) {
+            if (id != std::string_view{}) {
                     return { command, id };
-                }
             }
 
             return { std::string_view{}, std::string_view{} };
         }
 
         void FindAndPrintBusesForStop(const transport_catalogue::TransportCatalogue& tansport_catalogue,
-            const CommandId& command,
-            std::ostream& output) {
+                                      const CommandId& command,
+                                      std::ostream& output) {
             output << command.command << std::string{ " " }
             << command.id << std::string{ ": " };
             std::set<std::string_view> buses;
             buses = tansport_catalogue.GetBusesForStop(command.id);
+            
             if (buses.size() > 0) {
                 output << std::string{ "buses" };
                 for (auto bus : buses) {
@@ -95,17 +93,16 @@ namespace stat_reader {
     void ParseAndPrintStat(const transport_catalogue::TransportCatalogue& tansport_catalogue,
                            std::string_view request,
                            std::ostream& output) {
-        std::array<std::string, 2> commands{ {std::string{"Stop"}, std::string{"Bus"} } };
+        const auto stop = std::string{ "Stop" };
+        const auto bus = std::string{ "Bus" };
+        
+        CommandId in_command = detail::GetCommandAndId(request);
 
-        CommandId input_command = detail::GetCommandAndId(commands, request);
-
-        for (const auto& command_from_commands : commands) {
-            if (input_command.command == commands[0] && command_from_commands == commands[0]) {
-                detail::FindAndPrintBusesForStop(tansport_catalogue, input_command, output);
-            }
-            else if (input_command.command == commands[1] && command_from_commands == commands[1]) {
-                detail::FindBusAndPrintBusInformation(tansport_catalogue, input_command, output);
-            }
+        if (in_command.command == stop) {
+            detail::FindAndPrintBusesForStop(tansport_catalogue, in_command, output);
+        }
+        else if (in_command.command == bus) {
+            detail::FindBusAndPrintBusInformation(tansport_catalogue, in_command, output);
         }
     }
 }

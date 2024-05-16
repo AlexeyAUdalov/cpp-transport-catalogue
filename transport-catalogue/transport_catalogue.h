@@ -1,6 +1,5 @@
 #pragma once
 #include <deque>
-#include <map>
 #include <set>
 #include <string>
 #include <string_view>
@@ -11,6 +10,8 @@
 #include "geo.h"
 
 namespace transport_catalogue {
+	using DistancesContainer = std::vector<std::pair<int, std::string_view>>;
+
 	struct Stop {
 		std::string stop_name;
 		geo::Coordinates stop_coordinates;
@@ -48,10 +49,11 @@ namespace transport_catalogue {
 
 		Bus_Information GetBusInformation(const Bus* bus_iterator) const;
 
-		const std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
+		std::set<std::string_view> GetBusesForStop(std::string_view stop_name) const;
 
-		void AddDistancesBetwinStops
-		(std::map<std::string, std::set<std::pair<int, std::string_view>>>& distances_container);
+		void AddRealDistance(const std::string& stop, const DistancesContainer& distances_container);
+
+		int GetRealDistance(const Stop* from_stop, const Stop* to_stop) const;
 
 	private:
 		std::deque<Stop> stops_;

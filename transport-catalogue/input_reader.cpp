@@ -1,11 +1,8 @@
 #include "input_reader.h"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <iterator>
-#include <map>
-#include <set>
 #include <stdexcept>
 
 namespace input_reader {
@@ -63,28 +60,6 @@ namespace input_reader {
         }
 
         /**
-        * Парсит строку вида "7500m Universam" и возвращает пару (7500, Universam)
-        */
-        std::pair<int, std::string_view> DivideIntoDistanceAndStop(std::string_view str) {
-            static const int min_distance = 0;
-            static const int max_distance = 1000000;// задано условием задачи
-            std::string_view distance_and_stop_devider = "m to ";
-            auto devider_first_symbol = str.find(distance_and_stop_devider);
-
-            if (devider_first_symbol != str.npos) {
-                int distance = std::stoi(std::string(Trim(str.substr(0, devider_first_symbol))));
-                if (distance < min_distance || distance > max_distance) {
-                    return { 0, std::string_view{} };
-                }
-                std::string_view stop = Trim(str.substr(devider_first_symbol + distance_and_stop_devider.size()));
-
-                return { distance, stop };
-            }
-
-            return { 0, std::string_view{} };
-        }
-
-        /**
          * Парсит маршрут.
          * Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок [A,B,C,A]
          * Для некольцевого маршрута (A-B-C-D) возвращает массив названий остановок [A,B,C,D,C,B,A]
@@ -121,6 +96,37 @@ namespace input_reader {
                     std::string(line.substr(not_space, colon_pos - not_space)),
                     std::string(line.substr(colon_pos + 1)) };
         }
+
+        /**
+        * Парсит строку вида "55.595884, 37.209755, 9900m to Rasskazovka, 100m to Marushkino" и
+        * возвращает вектор пар {{9900, "Rasskazovka"}, {100, "Marushkino"}}
+        */
+        DistancesContainer ParseDistance(std::string_view description) {
+            DistancesContainer distances_container;
+            char top_level_devider = ',';
+            std::string_view distance_and_stop_devider = "m to ";
+
+            std::vector<std::string_view> parts = Split(description, top_level_devider);
+
+            if (parts.size() > 2) {
+                for (size_t item = 2; item < parts.size(); ++item) {
+                    auto devider_first_symbol = parts[item].find(distance_and_stop_devider);
+
+                    if (devider_first_symbol != parts[item].npos) {
+                        int distance = std::stoi(std::string(Trim(parts[item].substr(0, devider_first_symbol))));
+                        std::string_view destination_stop = Trim(parts[item].substr(devider_first_symbol +
+                            distance_and_stop_devider.size()));
+
+                        distances_container.emplace_back(distance, destination_stop);
+                    }
+                    else {
+                        throw std::invalid_argument(
+                            std::string{ "There are not stop and distance in description part" });
+                    }
+                }
+            }
+            return distances_container;
+        }
     }
 
     CommandDescription::operator bool() const {
@@ -136,48 +142,28 @@ namespace input_reader {
         if (command_description) {
             commands_.push_back(std::move(command_description));
         }
-    }    
+    }
 
     void InputReader::ApplyCommands([[maybe_unused]] transport_catalogue::TransportCatalogue& catalogue) const {
-        std::array<std::string, 2> commands{ {std::string{"Stop"}, std::string{"Bus"} } };
-        std::map<std::string, std::set<std::pair<int, std::string_view>>> distances_container;
+        const auto stop = std::string{ "Stop" };
+        const auto bus = std::string{ "Bus" };
 
-        for (auto const& command : commands) {
-            for (auto const& input_command : commands_) {
-                if (input_command.command == commands[0] && command == commands[0]) {
-                    std::vector<std::string_view> description_parts = detail::Split(input_command.description, ',');
-
-                    if (description_parts.size() >= 2) {
-                        double latitude = std::stod(std::string(description_parts[0]));
-                        double longitude = std::stod(std::string(description_parts[1]));
-                        if ((latitude >= -90 && latitude <= 90) && (longitude >= -180 && longitude <= 180)){
-                            catalogue.AddStop(input_command.id, { latitude , longitude });
-                        }
-                        else {
-                            throw std::out_of_range(std::string{ "Coordinates are out of range" });
-                        }
-
-                        for (size_t item = 2; item < description_parts.size(); ++item) {
-                            std::pair<int, std::string_view> distance_and_stop = 
-                                detail::DivideIntoDistanceAndStop(description_parts[item]);
-                            if (distance_and_stop.first != 0 && distance_and_stop.second != std::string_view{}) {
-                                distances_container[input_command.id].insert(distance_and_stop);
-                            }
-                            else {
-                                throw std::invalid_argument(std::string{ "There are not stop and distance" });
-                            }
-                        }                        
-                    }
-                    else {
-                        throw std::invalid_argument(std::string{ "There are not stop coordinates" });
-                    }
-                }
-                else if (input_command.command == commands[1] && command == commands[1]) {
-                    catalogue.AddBus(input_command.id, detail::ParseRoute(input_command.description));
-                }
+        for (auto const& in_command : commands_) {
+            if (in_command.command == stop) {
+                catalogue.AddStop(in_command.id, detail::ParseCoordinates(in_command.description));
             }
         }
 
-        catalogue.AddDistancesBetwinStops(distances_container);
+        for (auto const& in_command : commands_) {
+            if (in_command.command == bus) {
+                catalogue.AddBus(in_command.id, detail::ParseRoute(in_command.description));
+            }
+        }
+
+        for (auto const& in_command : commands_) {
+            if (in_command.command == stop) {
+                catalogue.AddRealDistance(in_command.id, detail::ParseDistance(in_command.description));
+            }
+        }
     }
 }

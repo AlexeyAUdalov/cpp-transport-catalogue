@@ -1,11 +1,15 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "geo.h"
 #include "transport_catalogue.h"
 
 namespace input_reader {
+    using DistancesContainer = std::vector<std::pair<int, std::string_view>>;
+
     struct CommandDescription {
         // Определяет, задана ли команда (поле command непустое)
         explicit operator bool() const;
