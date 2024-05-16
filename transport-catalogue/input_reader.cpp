@@ -158,10 +158,7 @@ namespace input_reader {
             if (in_command.command == bus) {
                 catalogue.AddBus(in_command.id, detail::ParseRoute(in_command.description));
             }
-        }
-
-        for (auto const& in_command : commands_) {
-            if (in_command.command == stop) {
+            else if (in_command.command == stop) {
                 catalogue.AddRealDistance(in_command.id, detail::ParseDistance(in_command.description));
             }
         }
