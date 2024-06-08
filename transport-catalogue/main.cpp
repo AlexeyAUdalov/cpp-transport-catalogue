@@ -1,32 +1,24 @@
 #include <iostream>
 #include <string>
+#include <iostream>
 
-#include "input_reader.h"
-#include "stat_reader.h"
+#include "request_handler.h"
+#include "json_reader.h"
+#include "map_renderer.h"
 
 using namespace std;
 
 int main() {
     transport_catalogue::TransportCatalogue catalogue;
+    json_reader::JsonReader input_request(cin);
 
-    int base_request_count;
-    cin >> base_request_count >> ws;
+    input_request.AddStopsToTransportCatalogue(catalogue);
+    input_request.AddBusesToTransportCatalogue(catalogue);
+    input_request.AddDistancesBetweenStopsToTransportCatalogue(catalogue);
 
-    {
-        input_reader::InputReader reader;
-        for (int i = 0; i < base_request_count; ++i) {
-            string line;
-            getline(cin, line);
-            reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);
-    }
+    map_renderer::MapRender map_renderer(input_request.AddRenderingSettings());
 
-    int stat_request_count;
-    cin >> stat_request_count >> ws;
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        stat_reader::ParseAndPrintStat(catalogue, line, cout);
-    }
-}
+    request_handler::RequestHandler request_handler(catalogue, map_renderer);
+
+    input_request.PrintStatistics(request_handler, cout);
+ }
