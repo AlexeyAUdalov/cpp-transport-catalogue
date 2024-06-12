@@ -26,7 +26,9 @@ namespace json_reader {
 		
 		map_renderer::RenderSettings AddRenderingSettings();
 		
-		void PrintStatistics(const request_handler::RequestHandler& catalogue, std::ostream& output);
+		void PrintStatistics(const request_handler::RequestHandler& request_handler,
+			                 const transport_catalogue::TransportCatalogue& catalogue,
+			                 std::ostream& output);
 
 	private:
 		Document input_json_;

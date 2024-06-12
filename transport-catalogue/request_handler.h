@@ -21,16 +21,7 @@ namespace request_handler {
         {
         }
          
-        // Возвращает информацию о маршруте (запрос Bus)
-        std::optional<domain::Bus_Information> GetBusStat(const std::string_view& bus_name) const;
-
-        // Возвращает маршруты, проходящие через
-        const std::set<std::string_view> GetBusesByStop(const std::string_view& stop_name) const;
-
-        // Возвращает true, если остановка есть в базе "Транспортный Справочник"
-        bool StopIsExist(const std::string_view& stop_name) const;
-
-        // Этот метод будет нужен в следующей части итогового проекта
+        // Возвращает svg-документ, для отображения карты маршрутов
         svg::Document RenderMap() const;
 
     private:

@@ -59,7 +59,7 @@ namespace json_reader {
 						auto& road_distances = data.at("road_distances"s).AsMap();
 						transport_catalogue::DistancesContainer distances_container;
 						for (auto& [stop, distance] : road_distances) {
-							distances_container.emplace_back(distance.AsInt(), stop);							
+							distances_container.emplace_back(distance.AsInt(), stop);
 						}
 						catalogue.AddDistanceBetweenStops(data.at("name"s).AsString(), distances_container);
 					}
@@ -125,30 +125,33 @@ namespace json_reader {
 				}
 			}
 			output_settings = { {width, height},
-				                                      padding, 
-				                                      line_width,
-				                                      stop_radius,
-				                                      bus_label_font_size,
-				                                      bus_label_offset,
-				                                      stop_label_font_size,
-				                                      stop_label_offset,
-				                                      underlayer_color,
-				                                      underlayer_width,
-				                                      color_palette };
+				                padding, 
+				                line_width,
+				                stop_radius,
+				                bus_label_font_size,
+				                bus_label_offset,
+				                stop_label_font_size,
+				                stop_label_offset,
+				                underlayer_color,
+				                underlayer_width,
+				                color_palette };
 		}
 		return output_settings;
 	}
 
-	Node CreateStopNode(const Dict& data, const request_handler::RequestHandler& catalogue) {
+	Node CreateStopNode(const Dict& data, const transport_catalogue::TransportCatalogue& catalogue) {
 		int request_id = data.at("id"s).AsInt();
 		std::string stop_name = data.at("name"s).AsString();
-		auto stop_is_exist = catalogue.StopIsExist(stop_name);
-		if (!stop_is_exist) {
+		
+		auto stop = catalogue.FindStop(stop_name);
+
+		
+		if (stop == nullptr) {
 			Node stop{ Dict{ {"request_id"s, request_id}, {"error_message"s, "not found"s} } };
 			return stop;
 		}
 		else {
-			auto& buses_for_stop_name = catalogue.GetBusesByStop(stop_name);
+			auto buses_for_stop_name = catalogue.GetBusesForStop(stop_name);
 			Array buses;
 			for (auto& bus : buses_for_stop_name) {
 				Node a{ std::string{bus} };
@@ -159,16 +162,17 @@ namespace json_reader {
 		}
 	}
 
-	Node CreateBusNode(const Dict& data, const request_handler::RequestHandler& catalogue) {
+	Node CreateBusNode(const Dict& data, const transport_catalogue::TransportCatalogue& catalogue) {
 		int request_id = data.at("id"s).AsInt();
 		std::string bus_name = data.at("name"s).AsString();
-		auto bus_information = catalogue.GetBusStat(bus_name);
-		if (bus_information) {
-			Node bus{ Dict{ {"curvature", bus_information->curvature},
+		const domain::Bus* bus_iterator = catalogue.FindBus(bus_name);		
+		if (bus_iterator != nullptr) {
+			auto bus_information = catalogue.GetBusInformation(bus_iterator);
+			Node bus{ Dict{ {"curvature", bus_information.curvature},
 							{"request_id", request_id},
-							{"route_length", bus_information->bus_route_length},
-							{"stop_count", bus_information->stops_on_bus_route},
-							{"unique_stop_count", bus_information->unique_bus_stops}} };
+							{"route_length", bus_information.bus_route_length},
+							{"stop_count", bus_information.stops_on_bus_route},
+							{"unique_stop_count", bus_information.unique_bus_stops}} };
 			return bus;
 		}
 		else {
@@ -177,15 +181,17 @@ namespace json_reader {
 		}
 	}
 
-	Node CreateMapNode(const Dict& data, const request_handler::RequestHandler& catalogue) {
+	Node CreateMapNode(const Dict& data, const request_handler::RequestHandler& request_handler) {
 		int request_id = data.at("id"s).AsInt();
 		std::ostringstream out;
-		catalogue.RenderMap().Render(out);
+		request_handler.RenderMap().Render(out);
 		Node dict_node{ Dict{{"map"s, out.str()}, {"request_id", request_id}} };
 		return dict_node;
 	}
 
-	void JsonReader::PrintStatistics(const request_handler::RequestHandler& catalogue, std::ostream& output) {
+	void JsonReader::PrintStatistics(const request_handler::RequestHandler& request_handler,
+		                             const transport_catalogue::TransportCatalogue& catalogue,
+		                             std::ostream& output) {
 		std::string stat_requests = "stat_requests"s;
 		json::Array output_array;
 		if (input_json_.GetRoot().AsMap().count(stat_requests) > 0) {
@@ -202,7 +208,7 @@ namespace json_reader {
 						output_array.push_back(bus);
 					}
 					else if (data.at("type"s).AsString() == "Map"s) {
-						Node map = CreateMapNode(data, catalogue);
+						Node map = CreateMapNode(data, request_handler);
 						output_array.push_back(map);
 					}
 				}

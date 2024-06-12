@@ -9,22 +9,6 @@
 
 namespace request_handler {
 
-    std::optional<domain::Bus_Information> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
-        const domain::Bus* bus_iterator = db_.FindBus(bus_name);
-        if (bus_iterator != nullptr) {
-            return db_.GetBusInformation(bus_iterator);
-        }
-        return std::nullopt;
-    }
-
-    const std::set<std::string_view> RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
-        return db_.GetBusesForStop(stop_name);
-    }
-
-    bool RequestHandler::StopIsExist(const std::string_view& stop_name) const {
-        return db_.FindStop(stop_name) == nullptr ? false : true;
-    }
-
     svg::Document RequestHandler::RenderMap() const {        
         std::map<std::string_view, const domain::Bus*> buses;
         for (const auto& [bus_name, bus_detail] : db_.GetBuses()) {
