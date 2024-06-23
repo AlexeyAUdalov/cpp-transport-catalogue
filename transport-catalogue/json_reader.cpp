@@ -140,6 +140,7 @@ namespace json_reader {
 	}
 
 	Node CreateStopNode(const Dict& data, const transport_catalogue::TransportCatalogue& catalogue) {
+		Builder stop_node;
 		int request_id = data.at("id"s).AsInt();
 		std::string stop_name = data.at("name"s).AsString();
 		
@@ -147,8 +148,9 @@ namespace json_reader {
 
 		
 		if (stop == nullptr) {
-			Node stop{ Dict{ {"request_id"s, request_id}, {"error_message"s, "not found"s} } };
-			return stop;
+			stop_node.StartDict().Key("request_id"s).Value(request_id).
+		                          Key("error_message"s).Value("not found"s).EndDict();
+			return stop_node.Build();
 		}
 		else {
 			auto buses_for_stop_name = catalogue.GetBusesForStop(stop_name);
@@ -157,43 +159,50 @@ namespace json_reader {
 				Node a{ std::string{bus} };
 				buses.emplace_back(a);
 			}
-			Node stop{ Dict{{"buses"s, buses}, {"request_id"s, request_id}} };
-			return stop;
+			stop_node.StartDict().Key("buses"s).Value(buses).
+				                  Key("request_id"s).Value(request_id).EndDict();
+			return stop_node.Build();
 		}
 	}
 
 	Node CreateBusNode(const Dict& data, const transport_catalogue::TransportCatalogue& catalogue) {
+		Builder bus_node;
 		int request_id = data.at("id"s).AsInt();
 		std::string bus_name = data.at("name"s).AsString();
 		const domain::Bus* bus_iterator = catalogue.FindBus(bus_name);		
 		if (bus_iterator != nullptr) {
 			auto bus_information = catalogue.GetBusInformation(bus_iterator);
-			Node bus{ Dict{ {"curvature", bus_information.curvature},
-							{"request_id", request_id},
-							{"route_length", bus_information.bus_route_length},
-							{"stop_count", bus_information.stops_on_bus_route},
-							{"unique_stop_count", bus_information.unique_bus_stops}} };
-			return bus;
+			bus_node.StartDict().Key("curvature"s).Value(bus_information.curvature).
+				                 Key("request_id"s).Value(request_id).
+				                 Key("route_length"s).Value(bus_information.bus_route_length).
+				                 Key("stop_count"s).Value(bus_information.stops_on_bus_route).
+				                 Key("unique_stop_count"s).Value(bus_information.unique_bus_stops).EndDict();
+			return bus_node.Build();
 		}
 		else {
-			Node bus{ Dict{ {"request_id"s, request_id}, {"error_message"s, "not found"s} } };
-			return bus;
+			bus_node.StartDict().Key("request_id"s).Value(request_id).
+				                 Key("error_message"s).Value("not found"s).EndDict();
+			return bus_node.Build();
 		}
 	}
 
 	Node CreateMapNode(const Dict& data, const request_handler::RequestHandler& request_handler) {
+		Builder map_node;
 		int request_id = data.at("id"s).AsInt();
 		std::ostringstream out;
 		request_handler.RenderMap().Render(out);
 		Node dict_node{ Dict{{"map"s, out.str()}, {"request_id", request_id}} };
-		return dict_node;
+		map_node.StartDict().Key("map"s).Value(out.str()).
+			                 Key("request_id"s).Value(request_id).EndDict();
+		return map_node.Build();
 	}
 
 	void JsonReader::PrintStatistics(const request_handler::RequestHandler& request_handler,
 		                             const transport_catalogue::TransportCatalogue& catalogue,
 		                             std::ostream& output) {
 		std::string stat_requests = "stat_requests"s;
-		json::Array output_array;
+		Builder output_statistics;
+		output_statistics.StartArray();
 		if (input_json_.GetRoot().AsMap().count(stat_requests) > 0) {
 			auto& input_data = input_json_.GetRoot().AsMap().at(stat_requests).AsArray();
 			for (auto& input_data_elemant : input_data) {
@@ -201,22 +210,22 @@ namespace json_reader {
 				if (data.count("type"s)) {
 					if (data.at("type"s).AsString() == "Stop"s) {
 						Node stop = CreateStopNode(data, catalogue);
-						output_array.push_back(stop);
+						output_statistics.Value(stop);						
 					}
 					else if (data.at("type"s).AsString() == "Bus"s) {
 						Node bus = CreateBusNode(data, catalogue);
-						output_array.push_back(bus);
+						output_statistics.Value(bus);
 					}
 					else if (data.at("type"s).AsString() == "Map"s) {
 						Node map = CreateMapNode(data, request_handler);
-						output_array.push_back(map);
+						output_statistics.Value(map);
 					}
 				}
 				else {
 					throw std::invalid_argument(std::string{ "Unknown request type" });
 				}
 			}
-			json::Print(Document{ output_array }, output);
+			json::Print(Document{ output_statistics.EndArray().Build() }, output);
 		}
 	}
 }

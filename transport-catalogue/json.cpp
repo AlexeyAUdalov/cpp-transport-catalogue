@@ -423,6 +423,10 @@ namespace json {
         return *this;
     }
 
+    Node::variant& Node::GetValue() {
+        return *this;
+    }
+
     Document::Document(Node root)
         : root_(std::move(root)) {
     }

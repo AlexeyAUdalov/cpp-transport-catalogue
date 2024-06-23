@@ -42,6 +42,7 @@ namespace json {
         const Array& AsArray() const;
         const Dict& AsMap() const;
         const variant& GetValue() const;
+        variant& GetValue();
     };
 
     class Document {
