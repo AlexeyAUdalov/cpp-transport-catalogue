@@ -9,7 +9,6 @@
 namespace json {
 
     class Node;
-    // Сохраните объявления Dict и Array без изменения
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
 
@@ -25,6 +24,9 @@ namespace json {
     public:
         // Делаем доступными все конструкторы родительского класса variant
         using variant::variant;
+        using Value = variant;
+
+        Node(Value value);
 
         bool IsInt() const;
         bool IsDouble() const;

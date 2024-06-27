@@ -301,51 +301,41 @@ namespace json {
         void PrintValue(const Array& arr, const PrintContext& ctx) {
             std::ostream& out = ctx.out;
             bool first = true;
-            if (arr.size()) {
-                out << "["sv << std::endl;
-                PrintContext map_ctx{ ctx.Indented() };
-                map_ctx.PrintIndent();
-                for (const auto& value : arr) {
-                    if (!first) {
-                        map_ctx.out << ", "sv << std::endl;
-                        map_ctx.PrintIndent();
-                    }
-                    PrintNode(value, map_ctx);
-                    first = false;
+            out << "["sv << std::endl;
+            PrintContext map_ctx{ ctx.Indented() };
+            map_ctx.PrintIndent();
+            for (const auto& value : arr) {
+                if (!first) {
+                    map_ctx.out << ", "sv << std::endl;
+                    map_ctx.PrintIndent();
                 }
-                out << std::endl;
-                ctx.PrintIndent();
-                out << "]"sv;
+                PrintNode(value, map_ctx);
+                first = false;
             }
-            else {
-                out << "[]"sv;
-            }
+            out << std::endl;
+            ctx.PrintIndent();
+            out << "]"sv;
         }
 
         void PrintValue(const Dict& dict, const PrintContext& ctx) {
             std::ostream& out = ctx.out;
             bool first = true;
             out << "{"sv << std::endl;
-            if (dict.size()) {
-                PrintContext map_ctx{ ctx.Indented() };
-                map_ctx.PrintIndent();
-                for (const auto& value : dict) {
-                    if (!first) {
-                        map_ctx.out << ", "sv << std::endl;
-                        map_ctx.PrintIndent();
-                    }
-                    PrintValue(value.first, map_ctx);
-                    map_ctx.out << ": "sv;
-                    PrintNode(value.second, map_ctx);
-                    first = false;
+            PrintContext map_ctx{ ctx.Indented() };
+            map_ctx.PrintIndent();
+            for (const auto& value : dict) {
+                if (!first) {
+                    map_ctx.out << ", "sv << std::endl;
+                    map_ctx.PrintIndent();
                 }
-                out << std::endl;
-                ctx.PrintIndent();
-                out << "}"sv;
+                PrintValue(value.first, map_ctx);
+                map_ctx.out << ": "sv;
+                PrintNode(value.second, map_ctx);
+                first = false;
             }
-            else {
-                out << "{}"sv;
-            }
+            out << std::endl;
+            ctx.PrintIndent();
+            out << "}"sv;
         }
 
         void PrintNode(const Node& node, const PrintContext& ctx) {
@@ -357,6 +347,11 @@ namespace json {
         }
 
     }  // namespace
+
+    Node::Node(Value value)
+        :variant(std::move(value))
+    {
+    }
 
     bool Node::IsInt() const {
         return std::holds_alternative<int>(*this);

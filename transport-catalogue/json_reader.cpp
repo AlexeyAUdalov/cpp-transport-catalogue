@@ -210,15 +210,15 @@ namespace json_reader {
 				if (data.count("type"s)) {
 					if (data.at("type"s).AsString() == "Stop"s) {
 						Node stop = CreateStopNode(data, catalogue);
-						output_statistics.Value(stop);						
+						output_statistics.Value(stop.GetValue());						
 					}
 					else if (data.at("type"s).AsString() == "Bus"s) {
 						Node bus = CreateBusNode(data, catalogue);
-						output_statistics.Value(bus);
+						output_statistics.Value(bus.GetValue());
 					}
 					else if (data.at("type"s).AsString() == "Map"s) {
 						Node map = CreateMapNode(data, request_handler);
-						output_statistics.Value(map);
+						output_statistics.Value(map.GetValue());
 					}
 				}
 				else {
